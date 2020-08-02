@@ -53,20 +53,20 @@ it'll likely not work.
 ### VyOS configuration
 - Unpack generated `EAP-TLS_8021x_xxxxxx-xxxxxxxxxxxxxx.tar.gz` and copy 3 pem files along with `wpa_supplicant.conf` to the VyOS router. I've used `/config/auth/att/` directory.
 - [Optional] Make sure the RG MAC addresss matches to what has been extracted and configured in `wpa_supplicant.conf`.
-- Configure WAN/ONT interface to use the RG MAC address 3 (three) times in the following configuration snippet (AT&T DHCP would not respond to any other MAC address. In addition, the DHCP request should be coming in VLAN 0). Also, please note, the ONT port is `eth3` in my example, but in most cases WAN `eth0` port will be used instead.
+- Configure WAN/ONT interface to use the RG MAC address 2 (two) times in the following configuration snippet (AT&T DHCP would not respond to any other MAC address. In addition, the DHCP request should be coming in VLAN 0). Also, please note, the ONT port is `eth3` in my example, but in most cases WAN `eth0` port will be used instead. DO NOT CHANGE THE HW-ID FIELD. This field is used by VyOS to accomplish persistent device naming. It allows VyOS to consistently name a device with a particular HW MAC address to be name the same on each bootup, even if the hardware moves in the system or it's configuration changes.
 ```
 vyos@vyos# show interfaces ethernet eth3
- hw-id xx:xx:xx:xx:xx:xx
+ hw-id yy:yy:yy:yy:yy:yy
  mac xx:xx:xx:xx:xx:xx
  vif 0 {
      address dhcp
      mac xx:xx:xx:xx:xx:xx
  }
 ```
-- VyOS is not supporting wired 802.1x configuration at this moment. However, it's still supported by the network scripts being used in the environment, and the `/etc/network/interfaces` config file is neither generated/altered by VyOS, nor conflicting with it. Adding the following lines to the file should result in `wpa_supplicant` started and running:
+- VyOS is not supporting wired 802.1x configuration at this moment. However, it's still supported by the network scripts being used in the environment, and the `/etc/network/interfaces` config file is neither generated/altered by VyOS, nor conflicting with it. Adding the following lines to the file should result in `wpa_supplicant` started and running. wpa_supplicant should be run on the untagged interface, and we don't want it to get any IPs or routes, so we can use manual.
 ```
-auto eth3.0
-iface eth3.0 inet dhcp
+auto eth3
+iface eth3 inet manual
 wpa-driver wired
 wpa-conf /config/auth/att/wpa_supplicant.conf
 ```
@@ -82,11 +82,6 @@ vyos@vyos# show nat source rule 100
      address masquerade
  }
 ```
-- [Tips] Occasionally, the interfaces in linux could get renumbered because of the MAC changes, eg. eth3 -> eth4 after the reboot. I recommend to "stick" the interface in udev, eg. creating the `/etc/udev/rules.d/70-persistent-net.rules` file with following content:
-```
-SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="yy:yy:yy:yy:yy:yy", ATTR{type}=="1", KERNEL=="eth*", NAME="eth3"
-```
-The address should there should be the original interface address, not the one from AT&T RG.
 - After committing, the interface (`eth3.0`) should up and configured with DHCP address shortly.
 To debug, look into `/var/log/messages` and/or run `wpa_supplicant` manually:
 ```
@@ -101,6 +96,9 @@ DUID configuration is essential to configure IPv6. AT&T would not respond withou
 ### IA-NA/IA-PD
 VyOS is hardcoding values for NA=1, PD=2 in the [template](https://github.com/vyos/vyos-1x/blob/current/data/templates/dhcp-client/ipv6.tmpl) used to generate the `dhcp6c` configuration file (eg. `/run/dhcp6c/dhcp6c.eth3.0.conf`). With these values, AT&T has never responded with IPv6 addresses.
 However, NA=0, PD=1 are working flawlessly for me. The following direct change of `/usr/share/vyos/templates/dhcp-client/ipv6.tmpl` file required:
+
+On the other hand, I have been using NA=1, PD=2 without issue -jzatarski, 2020-08-02
+
 ```
 vyos@vyos# diff -u <(curl https://raw.githubusercontent.com/vyos/vyos-1x/current/data/templates/dhcp-client/ipv6.tmpl) /usr/share/vyos/templates/dhcp-client/ipv6.tmpl
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
