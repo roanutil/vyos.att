@@ -70,6 +70,7 @@ iface eth3 inet manual
 wpa-driver wired
 wpa-conf /config/auth/att/wpa_supplicant.conf
 ```
+- It is best to change all file paths in the wpa_supplicant.conf file to absolute paths.
 - [**NB!**] Direct configuration would persist reboots, but would **not** survive the VyOS upgrade (only VyOS configuration is guaranteed to be saved). All the configuration outside of VyOS configuration shell should be saved and reapplied as needed. This is also applicable to direct configuration of some files in [IPv6 section](#ipv6-configuration). See the list of files, suggested to be changed: [List of directly modified files](#list-of-directly-modified-files).
 - NAT configuration is standard:
 ```
