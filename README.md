@@ -85,7 +85,7 @@ vyos@vyos# show nat source rule 100
 - After committing, the interface (`eth3.0`) should up and configured with DHCP address shortly.
 To debug, look into `/var/log/messages` and/or run `wpa_supplicant` manually:
 ```
-sudo /usr/sbin/wpa_supplicant  -Dwired -ieth3 -c /config/auth/wpa_supplicant.conf -ddd
+sudo /sbin/wpa_supplicant  -Dwired -ieth3 -c /config/auth/wpa_supplicant.conf -ddd
 ```
 
 [Up](#table-of-contents)
